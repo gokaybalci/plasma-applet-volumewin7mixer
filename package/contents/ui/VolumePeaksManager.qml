@@ -1,4 +1,4 @@
-import QtQuick 2.0
+import QtQuick 6.5
 import org.kde.plasma.private.volumewin7mixer 1.0
 
 VolumePeaks {

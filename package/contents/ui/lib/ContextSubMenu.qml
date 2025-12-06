@@ -1,38 +1,25 @@
-import QtQuick 2.0
+import QtQuick 6.5
+import org.kde.plasma.components as PlasmaComponents
 
-import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as PlasmaComponents
-
-// https://github.com/KDE/plasma-framework/blob/master/src/declarativeimports/plasmacomponents/qmenu.cpp
-// Example: https://github.com/KDE/plasma-desktop/blob/master/applets/taskmanager/package/contents/ui/ContextMenu.qml
 ContextMenuItem {
-	id: subMenuItem
+    id: subMenuItem
 
-	property var subContextMenu: ContextMenu {
-		id: subContextMenu
+    menu: ContextMenu {
+        id: subContextMenu
+        visualParent: subMenuItem
+    }
 
-		visualParent: subMenuItem.action
+    function newSeperator() {
+        return subContextMenu.newSeperator()
+    }
+    function newMenuItem() {
+        return subContextMenu.newMenuItem()
+    }
+    function newSubMenu() {
+        return subContextMenu.newSubMenu()
+    }
 
-		Component.onDestruction: {
-			// console.log('subContextMenu.onDestruction', subContextMenu, subContextMenu.visualParent)
-		}
-	}
-	Component.onDestruction: {
-		// console.log('subMenuItem.onDestruction', subMenuItem)
-	}
-
-	function newSeperator() {
-		return Qt.createQmlObject("ContextMenuItem { separator: true }", subContextMenu);
-	}
-	function newMenuItem() {
-		return Qt.createQmlObject("ContextMenuItem {}", subContextMenu);
-	}
-	function newSubMenu() {
-		return Qt.createQmlObject("ContextSubMenu {}", subContextMenu);
-	}
-
-	function addMenuItem(menuItem) {
-		// console.log('addMenuItem', menuItem, menuItem.text)
-		subContextMenu.addMenuItem(menuItem)
-	}
+    function addMenuItem(menuItem) {
+        subContextMenu.addMenuItem(menuItem)
+    }
 }

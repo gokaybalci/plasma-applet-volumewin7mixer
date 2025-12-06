@@ -1,9 +1,9 @@
-import QtQuick 2.0
-import QtQuick.Layouts 1.0
-import QtQuick.Controls 1.0
+import QtQuick 6.5
+import QtQuick.Layouts
+import QtQuick.Controls 6.5 as Controls
 
-import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as PlasmaComponents
+import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.components as PlasmaComponents
 
 PlasmaComponents.ToolButton {
 	id: iconLabelButton
@@ -13,7 +13,6 @@ PlasmaComponents.ToolButton {
 	property alias iconItemOverlays: icon.overlays
 	property alias iconItemHeight: icon.height
 
-	// ColumnLayout {
 	Column {
 		id: iconLabelButtonRow
 		width: parent.width
@@ -28,7 +27,7 @@ PlasmaComponents.ToolButton {
 			colorGroup: iconLabelButton.hovered || !iconLabelButton.flat ? PlasmaCore.Theme.ButtonColorGroup : PlasmaCore.ColorScope.colorGroup
 		}
 
-		Label {
+		Controls.Label {
 			id: textLabel
 			width: parent.width
 			// Layout.fillWidth: true

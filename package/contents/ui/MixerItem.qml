@@ -1,25 +1,27 @@
-import QtQuick 2.0
-import QtQuick.Layouts 1.0
-import QtQuick.Controls 1.0
-import QtQuick.Controls 2.0 as QQC2
+import QtQuick 6.5
+import QtQuick.Layouts
+import QtQuick.Controls 6.5 as Controls
 
-import org.kde.draganddrop 2.0
-import org.kde.kquickcontrolsaddons 2.0 as KAddons
-import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as PlasmaComponents
+import org.kde.draganddrop as DragDrop
+import org.kde.kquickcontrolsaddons as KAddons
+import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.components as PlasmaComponents
+import org.kde.ksvg as KSvg
 
-import org.kde.plasma.private.volume 0.1 as PlasmaVolume
+import org.kde.plasma.private.volume as PlasmaVolume
+import org.kde.kirigami as Kirigami
 
 import "lib"
 import "./code/Icon.js" as Icon
 import "./code/PulseObjectCommands.js" as PulseObjectCommands
 
-PlasmaComponents.ListItem {
+Item {
 	id: mixerItem
 	width: mixerItemWidth + (showChannels ? numChannels * (channelSliderWidth + volumeSliderRow.spacing) : 0) + background.margins.left + background.margins.right
-	checked: dropArea.containsDrag
+	implicitHeight: volumeSliderRow.implicitHeight
+    height: implicitHeight
 	opacity: !main.draggedStream || dropArea.canBeDroppedOn ? 1 : 0.4
-	separatorVisible: false
+	property bool checked: dropArea.containsDrag
 	property string mixerItemType: ''
 	property int mixerItemWidth: 100
 	property int volumeSliderWidth: 50
@@ -106,7 +108,7 @@ PlasmaComponents.ListItem {
 		card.PulseObject.activeProfileIndex = profileIndex
 	}
 
-	PlasmaCore.FrameSvgItem {
+	KSvg.FrameSvgItem {
 		id: background
 		imagePath: "widgets/listitem"
 		prefix: "normal"
@@ -331,9 +333,9 @@ PlasmaComponents.ListItem {
 
 	Row {
 		id: volumeSliderRow
-		// anchors.fill: parent
-		height: parent.height
-		width: parent.width
+		height: childrenRect.height
+		implicitHeight: childrenRect.height
+		width: parent ? parent.width : childrenRect.width
 		spacing: 10
 
 
@@ -350,7 +352,7 @@ PlasmaComponents.ListItem {
 				subText: tooltipSubText
 				icon: mixerItem.icon
 
-				DragArea {
+				DragDrop.DragArea {
 					id: dragArea
 					anchors.fill: parent
 					delegate: iconLabelButton // parent
@@ -399,14 +401,14 @@ PlasmaComponents.ListItem {
 							visible: mixerItem.showDefaultDeviceIndicator
 							anchors.left: parent.left
 							anchors.top: parent.top
-							anchors.margins: units.smallSpacing
+							anchors.margins: PlasmaCore.Units.smallSpacing
 							checked: mixerItem.isDefaultDevice
 							onClicked: {
 								mixerItem.makeDeviceDefault()
 								checked = Qt.binding(function(){ return mixerItem.isDefaultDevice })
 							}
 
-							QQC2.ToolTip {
+							Controls.ToolTip {
 								visible: defaultDeviceRadioButton.hovered
 								text: {
 									if (defaultDeviceRadioButton.checked) {
@@ -515,11 +517,12 @@ PlasmaComponents.ListItem {
 					// Block wheel events
 					KAddons.MouseEventListener {
 						anchors.fill: parent
-						acceptedButtons: Qt.MidButton
+						acceptedButtons: Qt.MiddleButton
 
 						property int wheelDelta: 0
 						onWheelMoved: {
-							wheelDelta += wheel.delta
+							var delta = wheel.angleDelta ? (wheel.angleDelta.y || wheel.angleDelta.x) : wheel.delta
+							wheelDelta += delta
 						
 							// Magic number 120 for common "one click"
 							// See: http://qt-project.org/doc/qt-5/qml-qtquick-wheelevent.html#angleDelta-prop
@@ -696,11 +699,12 @@ PlasmaComponents.ListItem {
 						// Block wheel events
 						KAddons.MouseEventListener {
 							anchors.fill: parent
-							acceptedButtons: Qt.MidButton
+							acceptedButtons: Qt.MiddleButton
 
 							property int wheelDelta: 0
 							onWheelMoved: {
-								wheelDelta += wheel.delta
+								var delta = wheel.angleDelta ? (wheel.angleDelta.y || wheel.angleDelta.x) : wheel.delta
+								wheelDelta += delta
 							
 								// Magic number 120 for common "one click"
 								// See: http://qt-project.org/doc/qt-5/qml-qtquick-wheelevent.html#angleDelta-prop
@@ -884,7 +888,7 @@ PlasmaComponents.ListItem {
 	}
 
 	function showPropertiesDialog() {
-		var qml = 'import QtQuick 2.0; \
+		var qml = 'import QtQuick 6.5; \
 		PulseObjectDialog { \
 			pulseObject: PulseObject \
 		} '

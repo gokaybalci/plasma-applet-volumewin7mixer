@@ -1,5 +1,5 @@
-import QtQuick 2.0
-import QtQuick.Layouts 1.0
+import QtQuick 6.5
+import QtQuick.Layouts
 
 ColumnLayout {
 	id: page

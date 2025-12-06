@@ -1,12 +1,16 @@
-import QtQuick 2.0
+import QtQuick 6.5
+import org.kde.kirigami as Kirigami
+import org.kde.plasma.core as PlasmaCore
 
 QtObject {
-	property int mediaControllerSliderHeight: 16 * units.devicePixelRatio
-	// property int mediaControllerButtonHeight: 48 * units.devicePixelRatio
-	property int mediaControllerHeight: 64 * units.devicePixelRatio
-	property int mixerGroupHeight: units.gridUnit * 24
-	property int mixerItemWidth: 100 * units.devicePixelRatio
-	property int volumeSliderWidth: 48 * units.devicePixelRatio
+	PlasmaCore.Theme { id: theme }
+
+	property int mediaControllerSliderHeight: 16 * Kirigami.Units.devicePixelRatio
+	// property int mediaControllerButtonHeight: 48 * Kirigami.Units.devicePixelRatio
+	property int mediaControllerHeight: 64 * Kirigami.Units.devicePixelRatio
+	property int mixerGroupHeight: Kirigami.Units.gridUnit * 24
+	property int mixerItemWidth: 100 * Kirigami.Units.devicePixelRatio
+	property int volumeSliderWidth: 48 * Kirigami.Units.devicePixelRatio
 
 	property string volumeSliderDesktopThemeId: "widgets/volumeslider"
 	property string volumeSliderUrl: {

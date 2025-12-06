@@ -1,15 +1,15 @@
-import QtQuick 2.4
-import QtQuick.Layouts 1.0
-import QtQuick.Controls 1.0
-import QtQuick.Controls.Styles.Plasma 2.0 as PlasmaStyles
+import QtQuick 6.5
+import QtQuick.Layouts
+import QtQuick.Controls 6.5 as Controls
 
-import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as PlasmaComponents
-import org.kde.plasma.extras 2.0 as PlasmaExtras
-import org.kde.kcoreaddons 1.0 as KCoreAddons
+import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.components as PlasmaComponents
+import org.kde.plasma.extras as PlasmaExtras
+import org.kde.kcoreaddons as KCoreAddons
 
 Item {
 	id: mediaController
+    PlasmaCore.Theme { id: theme }
 	property bool disablePositionUpdate: false
 	property bool keyPressed: false
 
@@ -81,7 +81,7 @@ Item {
 			}
 		}
 
-		Row {
+			Row {
 			id: rightSide
 			width: childrenRect.width
 			height: parent.height
@@ -120,7 +120,7 @@ Item {
 			// }
 			
 			PlasmaComponents.ToolButton {
-				iconSource: "media-skip-backward"
+				icon.name: "media-skip-backward"
 				width: height
 				height: parent.height
 				enabled: mpris2Source.canGoPrevious
@@ -130,14 +130,14 @@ Item {
 				}
 			}
 			PlasmaComponents.ToolButton {
-				iconSource: mpris2Source.isPlaying ? "media-playback-pause" : "media-playback-start"
+				icon.name: mpris2Source.isPlaying ? "media-playback-pause" : "media-playback-start"
 				width: height
 				height: parent.height
 				enabled: mpris2Source.canControl
 				onClicked: mpris2Source.playPause()
 			}
 			PlasmaComponents.ToolButton {
-				iconSource: "media-skip-forward"
+				icon.name: "media-skip-forward"
 				width: height
 				height: parent.height
 				enabled: mpris2Source.canGoNext
@@ -161,7 +161,7 @@ Item {
 		TextMetrics {
 			id: timeMetrics
 			text: i18ndc("plasma_applet_org.kde.plasma.mediacontroller", "Remaining time for song e.g -5:42", "-%1",
-						KCoreAddons.Format.formatDuration(seekSlider.maximumValue / 1000, KCoreAddons.FormatTypes.FoldHours))
+						KCoreAddons.Format.formatDuration(seekSlider.to / 1000, KCoreAddons.FormatTypes.FoldHours))
 			font: theme.smallestFont
 		}
 
@@ -196,10 +196,12 @@ Item {
 			// }
 			opacity: hovered ? 1 : 0.75
 			Behavior on opacity {
-				NumberAnimation { duration: units.longDuration }
+				NumberAnimation { duration: PlasmaCore.Units.longDuration }
 			}
 
 			value: 0
+			from: 0
+			to: mpris2Source.length
 			onValueChanged: {
 				if (!mediaController.disablePositionUpdate) {
 					// delay setting the position to avoid race conditions
@@ -208,7 +210,7 @@ Item {
 					// console.log('onValueChanged skipped')
 				}
 			}
-			onMaximumValueChanged: mpris2Source.retrievePosition()
+			onToChanged: mpris2Source.retrievePosition()
 
 			Connections {
 				target: mpris2Source
@@ -220,8 +222,8 @@ Item {
 						mediaController.disablePositionUpdate = true
 						// console.log('mpris2Source.position', mpris2Source.position)
 						// console.log('\tmpris2Source.length', mpris2Source.length, seekSlider.maximumValue)
-						if (seekSlider.maximumValue != mpris2Source.length) { // mpris2Source.onLengthChanged isn't always called.
-							seekSlider.maximumValue = mpris2Source.length
+						if (seekSlider.to != mpris2Source.length) { // mpris2Source.onLengthChanged isn't always called.
+							seekSlider.to = mpris2Source.length
 						}
 						seekSlider.value = mpris2Source.position
 						mediaController.disablePositionUpdate = false
@@ -230,7 +232,7 @@ Item {
 				onLengthChanged: {
 					mediaController.disablePositionUpdate = true
 					// console.log('mpris2Source.length', mpris2Source.length)
-					seekSlider.maximumValue = mpris2Source.length
+					seekSlider.to = mpris2Source.length
 					mediaController.disablePositionUpdate = false
 				}
 			}
@@ -263,7 +265,7 @@ Item {
 					// add one second; value in microseconds
 					if (!seekSlider.pressed) {
 						mediaController.disablePositionUpdate = true
-						if (seekSlider.value == seekSlider.maximumValue) {
+						if (seekSlider.value == seekSlider.to) {
 							mpris2Source.retrievePosition();
 						} else {
 							seekSlider.value += 1000000
@@ -280,7 +282,7 @@ Item {
 			Layout.fillHeight: true
 			verticalAlignment: Text.AlignVCenter
 			text: i18nc("Remaining time for song e.g -5:42", "-%1",
-						KCoreAddons.Format.formatDuration((seekSlider.maximumValue - seekSlider.value) / 1000, KCoreAddons.FormatTypes.FoldHours))
+						KCoreAddons.Format.formatDuration((seekSlider.to - seekSlider.value) / 1000, KCoreAddons.FormatTypes.FoldHours))
 			opacity: 0.6
 			font: theme.smallestFont
 		}
@@ -291,7 +293,7 @@ Item {
 			Layout.fillHeight: true
 			verticalAlignment: Text.AlignVCenter
 			horizontalAlignment: Text.AlignRight
-			text: KCoreAddons.Format.formatDuration(seekSlider.maximumValue / 1000, KCoreAddons.FormatTypes.FoldHours)
+			text: KCoreAddons.Format.formatDuration(seekSlider.to / 1000, KCoreAddons.FormatTypes.FoldHours)
 			opacity: 0.6
 			font: theme.smallestFont
 		}

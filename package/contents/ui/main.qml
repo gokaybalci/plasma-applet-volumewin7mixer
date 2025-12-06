@@ -16,486 +16,431 @@
 
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*
+
+/*  
+    SPDX-FileCopyrightText: 2014-2015 Harald Sitter
+    SPDX-License-Identifier: GPL-2.0-or-later
 */
 
-import QtQuick 2.0
-import QtQuick.Layouts 1.0
-import QtQuick.Controls 1.0
-import QtQuick.Controls.Styles.Plasma 2.0 as PlasmaStyles
+import QtQuick 6.5
+import QtQuick.Layouts
+import QtQuick.Controls 6.5
 
-import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as PlasmaComponents
-import org.kde.plasma.extras 2.0 as PlasmaExtras
-import org.kde.plasma.plasmoid 2.0
+// Plasma Frameworks (Plasma 6)
+import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.components as PlasmaComponents
+import org.kde.plasma.extras as PlasmaExtras
+import org.kde.plasma.plasmoid
 
-import org.kde.plasma.private.volume 0.1 as PlasmaVolume
+// Kirigami (Plasma 6)
+import org.kde.kirigami as Kirigami
 
+// Plasma Volume (backend APIs)
+import org.kde.plasma.private.volume as PlasmaVolume
+
+// JS helper files
 import "./code/Utils.js" as Utils
 import "./code/PulseObjectCommands.js" as PulseObjectCommands
-import "lib"
 
-DialogApplet {
-	id: main
+PlasmoidItem {
+    id: root
 
-	AppletConfig { id: config }
-	
-	property string draggedStreamType: ''
-	property QtObject draggedStream: null
-	function startDrag(pulseObject, type) {
-		draggedStreamType = type
-		draggedStream = pulseObject
-	}
-	function clearDrag() {
-		draggedStream = null
-		draggedStreamType = ''
-	}
+    // compatibility properties for components expecting dialog state helpers
+    property alias dialogVisible: root.expanded
+    function openDialog(usedKeyboard) { root.expanded = true }
+    function closeDialog(usedKeyboard) { root.expanded = false }
+    function toggleDialog(usedKeyboard) { root.expanded = !root.expanded }
 
-	property string displayName: i18nd("plasma_applet_org.kde.plasma.volume", "Audio Volume")
-	property string speakerIcon: Utils.iconNameForStream(sinkModel.defaultSink)
-	
-	compactItemIcon: speakerIcon
-	onCompactItemClicked: {
-		if (mouse.button == Qt.LeftButton) {
-			main.toggleDialog(false)
-		} else if (mouse.button == Qt.MiddleButton) {
-			toggleDefaultSinksMute()
-		}
-	}
-	onCompactItemWheel: {
-		var delta = wheel.angleDelta.y || wheel.angleDelta.x
-		if (delta > 0) {
-			increaseDefaultSinkVolume()
-		} else if (delta < 0) {
-			decreaseDefaultSinkVolume()
-		}
-	}
+    // Keep an AppletConfig object if needed by other code
+    AppletConfig { id: config }
 
-	Plasmoid.icon: {
-		if (mpris2Source.hasPlayer && mpris2Source.albumArt) {
-			return mpris2Source.albumArt
-		} else {
-			return speakerIcon
-		}
-	}
-	Plasmoid.toolTipMainText: {
-		if (mpris2Source.hasPlayer && mpris2Source.track) {
-			return mpris2Source.track
-		} else {
-			return displayName
-		}
-	}
-	Plasmoid.toolTipSubText: {
-		var lines = []
-		if (mpris2Source.hasPlayer && mpris2Source.artist) {
-			if (mpris2Source.isPaused) {
-				lines.push(mpris2Source.artist ? i18ndc("plasma_applet_org.kde.plasma.mediacontroller", "Artist of the song", "by %1 (paused)", mpris2Source.artist) : i18nd("plasma_applet_org.kde.plasma.mediacontroller", "Paused"))
-			} else if (mpris2Source.artist) {
-				lines.push(i18ndc("plasma_applet_org.kde.plasma.mediacontroller", "Artist of the song", "by %1", mpris2Source.artist))
-			}
-		}
-		if (sinkModel.defaultSink) {
-			var sinkVolumePercent = Math.round(PulseObjectCommands.volumePercent(sinkModel.defaultSink.volume))
-			lines.push(i18nd("plasma_applet_org.kde.plasma.volume", "Volume at %1%", sinkVolumePercent))
-			lines.push(sinkModel.defaultSink.description)
-		}
-		return lines.join('\n')
-	}
+    // --- properties moved from DialogApplet ---
+    property string draggedStreamType: ''
+    property QtObject draggedStream: null
+    function startDrag(pulseObject, type) {
+        draggedStreamType = type
+        draggedStream = pulseObject
+    }
+    function clearDrag() {
+        draggedStream = null
+        draggedStreamType = ''
+    }
 
+    property string displayName: i18nd("plasma_applet_org.kde.plasma.volume", "Audio Volume")
+    property string speakerIcon: Utils.iconNameForStream(sinkModel.defaultSink)
 
-	property bool showMediaController: plasmoid.configuration.showMediaController
-	property string mediaControllerLocation: plasmoid.configuration.mediaControllerLocation || 'bottom'
-	property bool mediaControllerVisible: showMediaController && mpris2Source.hasPlayer
-	// property int mediaControllerHeight: 56 // = 48px albumArt + 8px seekbar
+    // Compact interaction emulation (was compactItemIcon, onCompactItemClicked...)
+    compactRepresentation: Item {
+        id: compactRep
+        width: PlasmaCore.Units.iconSizes.large
+        height: PlasmaCore.Units.iconSizes.large
 
-	dialogContents: Item {
-		id: dialogContents
+        Image {
+            id: compactIcon
+            anchors.fill: parent
+            source: speakerIcon
+            fillMode: Image.PreserveAspectFit
+        }
 
-		width: mixerItemRow.width
-		height: config.mixerGroupHeight + (mediaControllerVisible ? config.mediaControllerHeight : 0)
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                if (mouse.button === Qt.LeftButton) {
+                    // Plasma 6 may expose a popup API; this is a best-effort call to toggle the fullRepresentation.
+                    // If your environment exposes a specific API, replace this with the proper call.
+                    root.toggleDialog(false)
+                } else if (mouse.button === Qt.MiddleButton) {
+                    toggleDefaultSinksMute()
+                }
+            }
+            // Wheel event handling
+            onWheel: {
+                var delta = wheel.angleDelta.y || wheel.angleDelta.x
+                if (delta > 0) {
+                    increaseDefaultSinkVolume()
+                } else if (delta < 0) {
+                    decreaseDefaultSinkVolume()
+                }
+            }
+        }
+    }
 
+    // Full UI (was dialogContents)
+    fullRepresentation: Item {
+        id: dialogContents
 
-		// Keyboard Navigation/Controls
-		InputManager { id: inputManager }
-		focus: true
-		Keys.forwardTo: inputManager.hasSelection ? [inputManager.selectedMixerItem] : []
-		Keys.onLeftPressed: inputManager.selectLeft()
-		Keys.onRightPressed: inputManager.selectRight()
-		function fireKeyOnDefault(keyName, event) {
-			if (!inputManager.hasSelection) {
-				inputManager.selectDefault()
-				var fnName = 'on' + keyName + 'Pressed'
-				inputManager.selectedMixerItem.Keys[fnName](event) // Manually trigger since it hasn't been forwarded yet.
-			}
-		}
-		Keys.onUpPressed: fireKeyOnDefault('Up', event)
-		Keys.onDownPressed: fireKeyOnDefault('Down', event)
-		Keys.onPressed: fireKeyOnDefault('', event)
+        width: mixerItemRow.width
+        height: config.mixerGroupHeight + (mediaControllerVisible ? config.mediaControllerHeight : 0)
 
-		Row {
-			id: mixerItemRow
-			anchors.right: parent.right
-			width: childrenRect.width
-			height: parent.height - (mediaControllerVisible ? config.mediaControllerHeight : 0)
-			spacing: 10
+        // Keyboard Navigation/Controls
+        InputManager { id: inputManager }
+        focus: true
+        Keys.forwardTo: inputManager.hasSelection ? [inputManager.selectedMixerItem] : []
+        Keys.onLeftPressed: inputManager.selectLeft()
+        Keys.onRightPressed: inputManager.selectRight()
+        function fireKeyOnDefault(keyName, event) {
+            if (!inputManager.hasSelection) {
+                inputManager.selectDefault()
+                var fnName = 'on' + keyName + 'Pressed'
+                inputManager.selectedMixerItem.Keys[fnName](event)
+            }
+        }
+        Keys.onUpPressed: fireKeyOnDefault('Up', event)
+        Keys.onDownPressed: fireKeyOnDefault('Down', event)
+        Keys.onPressed: fireKeyOnDefault('', event)
 
-			MixerItemGroup {
-				id: sourceOutputMixerItemGroup
-				height: parent.height
-				title: i18n("Recording Apps")
+        Row {
+            id: mixerItemRow
+            anchors.right: parent.right
+            width: childrenRect.width
+            height: parent.height - (mediaControllerVisible ? config.mediaControllerHeight : 0)
+            spacing: 10
 
-				model: appOutputsModel
-				mixerGroupType: 'SourceOutput'
-			}
+            MixerItemGroup {
+                id: sourceOutputMixerItemGroup
+                height: parent.height
+                title: i18n("Recording Apps")
 
-			MixerItemGroup {
-				id: sinkInputMixerItemGroup
-				height: parent.height
-				title: i18n("Apps")
+                model: appOutputsModel
+                mixerGroupType: 'SourceOutput'
+            }
 
-				model: appsModel
-				mixerGroupType: 'SinkInput'
-			}
+            MixerItemGroup {
+                id: sinkInputMixerItemGroup
+                height: parent.height
+                title: i18n("Apps")
 
-			MixerItemGroup {
-				id: sourceMixerItemGroup
-				height: parent.height
-				title: i18n("Mics")
-		
-				model: filteredSourceModel
-				mixerGroupType: 'Source'
-			}
+                model: appsModel
+                mixerGroupType: 'SinkInput'
+            }
 
-			MixerItemGroup {
-				id: sinkMixerItemGroup
-				height: parent.height
-				title: i18n("Speakers")
-				
-				model: filteredSinkModel
-				mixerGroupType: 'Sink'
-			}
+            MixerItemGroup {
+                id: sourceMixerItemGroup
+                height: parent.height
+                title: i18n("Mics")
 
-		}
+                model: filteredSourceModel
+                mixerGroupType: 'Source'
+            }
 
-		MediaController {
-			id: mediaController
-			width: mixerItemRow.width
-			height: config.mediaControllerHeight
-		}
+            MixerItemGroup {
+                id: sinkMixerItemGroup
+                height: parent.height
+                title: i18n("Speakers")
 
-		PlasmaComponents.ToolButton {
-			id: pinButton
-			anchors.top: parent.top
-			anchors.right: parent.right
-			width: Math.round(units.gridUnit * 1.25)
-			height: width
-			checkable: true
-			iconSource: "window-pin"
-			onCheckedChanged: plasmoid.hideOnWindowDeactivate = !checked
-		}
+                model: filteredSinkModel
+                mixerGroupType: 'Sink'
+            }
 
-		states: [
-			State {
-				name: "mediaControllerHidden"
-				when: !mediaControllerVisible
-				PropertyChanges {
-					target: mixerItemRow
-					anchors.top: mixerItemRow.parent.top
-					anchors.bottom: mixerItemRow.parent.bottom
-				}
-				PropertyChanges {
-					target: mediaController
-					visible: false
-				}
-			},
-			State {
-				name: "mediaControllerTop"
-				when: mediaControllerVisible && mediaControllerLocation == 'top'
-				PropertyChanges {
-					target: mixerItemRow
-					// anchors.top: undefined
-					anchors.topMargin: config.mediaControllerHeight
-					anchors.bottom: mixerItemRow.parent.bottom
-				}
-				PropertyChanges {
-					target: mediaController
-					visible: true
-					anchors.left: mediaController.parent.left
-					anchors.top: mediaController.parent.top
-					anchors.bottom: mixerItemRow.top
-				}
-				PropertyChanges {
-					target: pinButton
-					anchors.topMargin: config.mediaControllerHeight
-				}
-			},
-			State {
-				name: "mediaControllerBottom"
-				when: mediaControllerVisible && mediaControllerLocation == 'bottom'
-				PropertyChanges {
-					target: mixerItemRow
-					anchors.top: mixerItemRow.parent.top
-					// anchors.bottom: undefined
-					anchors.bottomMargin: config.mediaControllerHeight
-				}
-				PropertyChanges {
-					target: mediaController
-					visible: true
-					anchors.left: mediaController.parent.left
-					anchors.top: mixerItemRow.bottom
-					anchors.right: mediaController.parent.right
-					anchors.bottom: mediaController.parent.bottom
-				}
-			}
-		]
-	}
+        }
 
-	function increaseDefaultSinkVolume() {
-		if (!sinkModel.defaultSink) {
-			return
-		}
-		sinkModel.defaultSink.muted = false
-		var volume = PulseObjectCommands.increaseVolume(sinkModel.defaultSink)
-		osd.showVolume(volume)
-		playFeedback()
-	}
+        MediaController {
+            id: mediaController
+            width: mixerItemRow.width
+            height: config.mediaControllerHeight
+        }
 
-	function decreaseDefaultSinkVolume() {
-		if (!sinkModel.defaultSink) {
-			return
-		}
-		sinkModel.defaultSink.muted = false
-		var volume = PulseObjectCommands.decreaseVolume(sinkModel.defaultSink)
-		osd.showVolume(volume)
-		playFeedback()
-	}
+        PlasmaComponents.ToolButton {
+            id: pinButton
+            anchors.top: parent.top
+            anchors.right: parent.right
+            width: Math.round(PlasmaCore.Units.gridUnit * 1.25)
+            height: width
+            checkable: true
+            icon.name: "window-pin"
+            onCheckedChanged: plasmoid.hideOnWindowDeactivate = !checked
+        }
 
-	function toggleDefaultSinksMute() {
-		if (!sinkModel.defaultSink) {
-			return
-		}
-		var toMute = PulseObjectCommands.toggleMute(sinkModel.defaultSink)
-		osd.showVolume(toMute ? 0 : sinkModel.defaultSink.volume)
-		playFeedback()
-	}
+        states: [
+            State {
+                name: "mediaControllerHidden"
+                when: !mediaControllerVisible
+                PropertyChanges {
+                    target: mixerItemRow
+                    anchors.top: mixerItemRow.parent.top
+                    anchors.bottom: mixerItemRow.parent.bottom
+                }
+                PropertyChanges {
+                    target: mediaController
+                    visible: false
+                }
+            },
+            State {
+                name: "mediaControllerTop"
+                when: mediaControllerVisible && mediaControllerLocation == 'top'
+                PropertyChanges {
+                    target: mixerItemRow
+                    anchors.topMargin: config.mediaControllerHeight
+                    anchors.bottom: mixerItemRow.parent.bottom
+                }
+                PropertyChanges {
+                    target: mediaController
+                    visible: true
+                    anchors.left: mediaController.parent.left
+                    anchors.top: mediaController.parent.top
+                    anchors.bottom: mixerItemRow.top
+                }
+                PropertyChanges {
+                    target: pinButton
+                    anchors.topMargin: config.mediaControllerHeight
+                }
+            },
+            State {
+                name: "mediaControllerBottom"
+                when: mediaControllerVisible && mediaControllerLocation == 'bottom'
+                PropertyChanges {
+                    target: mixerItemRow
+                    anchors.top: mixerItemRow.parent.top
+                    anchors.bottomMargin: config.mediaControllerHeight
+                }
+                PropertyChanges {
+                    target: mediaController
+                    visible: true
+                    anchors.left: mediaController.parent.left
+                    anchors.top: mixerItemRow.bottom
+                    anchors.right: mediaController.parent.right
+                    anchors.bottom: mediaController.parent.bottom
+                }
+            }
+        ]
+    }
 
-	function increaseDefaultSourceVolume() {
-		if (!sourceModel.defaultSource) {
-			return
-		}
-		sourceModel.defaultSource.muted = false
-		var volume = PulseObjectCommands.increaseVolume(sourceModel.defaultSource)
-		osd.showMicVolume(volume)
-	}
-	
-	function decreaseDefaultSourceVolume() {
-		if (!sourceModel.defaultSource) {
-			return
-		}
-		sourceModel.defaultSource.muted = false
-		var volume = PulseObjectCommands.decreaseVolume(sourceModel.defaultSource)
-		osd.showMicVolume(volume)
-	}
+    // --- functions and helpers preserved ---
+    function increaseDefaultSinkVolume() {
+        if (!sinkModel.defaultSink) {
+            return
+        }
+        sinkModel.defaultSink.muted = false
+        var volume = PulseObjectCommands.increaseVolume(sinkModel.defaultSink)
+        osd.showVolume(volume)
+        playFeedback()
+    }
 
-	function toggleDefaultSourceMute() {
-		if (!sourceModel.defaultSource) {
-			return
-		}
-		var toMute = PulseObjectCommands.toggleMute(sourceModel.defaultSource)
-		osd.showMicVolume(toMute ? 0 : sourceModel.defaultSource.volume)
-	}
+    function decreaseDefaultSinkVolume() {
+        if (!sinkModel.defaultSink) {
+            return
+        }
+        sinkModel.defaultSink.muted = false
+        var volume = PulseObjectCommands.decreaseVolume(sinkModel.defaultSink)
+        osd.showVolume(volume)
+        playFeedback()
+    }
 
-	// Connections {
-	// 	target: sinkModel
-	// 	onDefaultSinkChanged: {
-	// 		// console.log('sinkModel.onDefaultSinkChanged', sinkModel.defaultSink)
-	// 		if (!sinkModel.defaultSink) {
-	// 			return
-	// 		}
-	// 		if (plasmoid.configuration.moveAllAppsOnSetDefault) {
-	// 			// console.log(appsModel, appsModel.count)
-	// 			for (var i = 0; i < appsModel.count; i++) {
-	// 				var stream = appsModel.get(i)
-	// 				stream = stream.PulseObject
-	// 				// console.log(i, stream, stream.name, stream.deviceIndex, sinkModel.defaultSink.index)
-	// 				stream.deviceIndex = sinkModel.defaultSink.index
-	// 			}
-	// 		}
-	// 	}
-	// }
+    function toggleDefaultSinksMute() {
+        if (!sinkModel.defaultSink) {
+            return
+        }
+        var toMute = PulseObjectCommands.toggleMute(sinkModel.defaultSink)
+        osd.showVolume(toMute ? 0 : sinkModel.defaultSink.volume)
+        playFeedback()
+    }
 
-	PlasmaVolume.GlobalActionCollection {
-		// KGlobalAccel cannot transition from kmix to something else, so if
-		// the user had a custom shortcut set for kmix those would get lost.
-		// To avoid this we hijack kmix name and actions. Entirely mental but
-		// best we can do to not cause annoyance for the user.
-		// The display name actually is updated to whatever registered last
-		// though, so as far as user visible strings go we should be fine.
-		// As of 2015-07-21:
-		//   componentName: kmix
-		//   actions: increase_volume, decrease_volume, mute
-		name: "kmix"
-		displayName: main.displayName
-		PlasmaVolume.GlobalAction {
-			objectName: "increase_volume"
-			text: i18nd("plasma_applet_org.kde.plasma.volume", "Increase Volume")
-			shortcut: Qt.Key_VolumeUp
-			onTriggered: increaseDefaultSinkVolume()
-		}
-		PlasmaVolume.GlobalAction {
-			objectName: "decrease_volume"
-			text: i18nd("plasma_applet_org.kde.plasma.volume", "Decrease Volume")
-			shortcut: Qt.Key_VolumeDown
-			onTriggered: decreaseDefaultSinkVolume()
-		}
-		PlasmaVolume.GlobalAction {
-			objectName: "mute"
-			text: i18nd("plasma_applet_org.kde.plasma.volume", "Mute")
-			shortcut: Qt.Key_VolumeMute
-			onTriggered: toggleDefaultSinksMute()
-		}
-		PlasmaVolume.GlobalAction {
-			objectName: "increase_microphone_volume"
-			text: i18nd("plasma_applet_org.kde.plasma.volume", "Increase Microphone Volume")
-			shortcut: Qt.Key_MicVolumeUp
-			onTriggered: increaseDefaultSourceVolume()
-		}
-		PlasmaVolume.GlobalAction {
-			objectName: "decrease_microphone_volume"
-			text: i18nd("plasma_applet_org.kde.plasma.volume", "Decrease Microphone Volume")
-			shortcut: Qt.Key_MicVolumeDown
-			onTriggered: decreaseDefaultSourceVolume()
-		}
-		PlasmaVolume.GlobalAction {
-			objectName: "mic_mute"
-			text: i18nd("plasma_applet_org.kde.plasma.volume", "Mute Microphone")
-			shortcut: Qt.Key_MicMute
-			onTriggered: toggleDefaultSourceMute()
-		}
-	}
+    function increaseDefaultSourceVolume() {
+        if (!sourceModel.defaultSource) {
+            return
+        }
+        sourceModel.defaultSource.muted = false
+        var volume = PulseObjectCommands.increaseVolume(sourceModel.defaultSource)
+        osd.showMicVolume(volume)
+    }
 
-	ExecUtil {
-		id: executable
-	}
+    function decreaseDefaultSourceVolume() {
+        if (!sourceModel.defaultSource) {
+            return
+        }
+        sourceModel.defaultSource.muted = false
+        var volume = PulseObjectCommands.decreaseVolume(sourceModel.defaultSource)
+        osd.showMicVolume(volume)
+    }
 
-	PlasmaVolume.VolumeOSD {
-		id: osd
+    function toggleDefaultSourceMute() {
+        if (!sourceModel.defaultSource) {
+            return
+        }
+        var toMute = PulseObjectCommands.toggleMute(sourceModel.defaultSource)
+        osd.showMicVolume(toMute ? 0 : sourceModel.defaultSource.volume)
+    }
 
-		function showVolume(volume) {
-			if (plasmoid.configuration.showOsd) {
-				var volPercent = PulseObjectCommands.volumePercent(volume)
-				try {
-					// Plasma 5.19 and below
-					osd.show(volPercent)
-				} catch (e) { // invalid number of arguments
-					// Plasma 5.20
-					var maxPercent = volPercent > 100 ? 150 : 100
-					osd.show(volPercent, maxPercent)
-				}
-			}
-		}
+    // preserved models
+    Mpris2DataSource { id: mpris2Source }
+    DynamicFilterModel { id: appsModel; sourceModel: PlasmaVolume.SinkInputModel {} }
+    DynamicFilterModel { id: appOutputsModel; sourceModel: PlasmaVolume.SourceOutputModel {} }
+    DynamicFilterModel { id: filteredSourceModel; sourceModel: PlasmaVolume.SourceModel { id: sourceModel } }
+    DynamicFilterModel { id: filteredSinkModel; sourceModel: PlasmaVolume.SinkModel { id: sinkModel } }
+    DynamicFilterModel { id: filteredCardModel; sourceModel: PlasmaVolume.CardModel { id: cardModel } }
 
-		function showMicVolume(volume) {
-			if (plasmoid.configuration.showOsd) {
-				var volPercent = PulseObjectCommands.volumePercent(volume)
-				osd.showMicrophone(volPercent)
-			}
-		}
-	}
+    function findStream(model, predicate) {
+        for (var i = 0; i < model.count; i++) {
+            var stream = model.get(i)
+            stream = stream.PulseObject
+            if (predicate(stream, i)) {
+                return i
+            }
+        }
+        return -1
+    }
+    function getStream(model, predicate) {
+        for (var i = 0; i < model.count; i++) {
+            var stream = model.get(i)
+            stream = stream.PulseObject
+            if (predicate(stream, i)) {
+                return stream
+            }
+        }
+        return null
+    }
 
-	PlasmaVolume.VolumeFeedback {
-		id: feedback
-	}
+    function action_alsamixer() {
+        executable.exec("konsole -e alsamixer")
+    }
 
-	function playFeedback(sinkIndex) {
-		if (!plasmoid.configuration.volumeChangeFeedback) {
-			return
-		}
-		if (sinkIndex == undefined) {
-			sinkIndex = sinkModel.defaultSink.index
-		}
-		feedback.play(sinkIndex)
-	}
+    function action_pavucontrol() {
+        executable.exec("pavucontrol")
+    }
 
-	Mpris2DataSource {
-		id: mpris2Source
-	}
+    PlasmaVolume.GlobalActionCollection {
+        name: "kmix"
+        displayName: root.displayName
+        PlasmaVolume.GlobalAction {
+            objectName: "increase_volume"
+            text: i18nd("plasma_applet_org.kde.plasma.volume", "Increase Volume")
+            shortcut: Qt.Key_VolumeUp
+            onTriggered: increaseDefaultSinkVolume()
+        }
+        PlasmaVolume.GlobalAction {
+            objectName: "decrease_volume"
+            text: i18nd("plasma_applet_org.kde.plasma.volume", "Decrease Volume")
+            shortcut: Qt.Key_VolumeDown
+            onTriggered: decreaseDefaultSinkVolume()
+        }
+        PlasmaVolume.GlobalAction {
+            objectName: "mute"
+            text: i18nd("plasma_applet_org.kde.plasma.volume", "Mute")
+            shortcut: Qt.Key_VolumeMute
+            onTriggered: toggleDefaultSinksMute()
+        }
+        PlasmaVolume.GlobalAction {
+            objectName: "increase_microphone_volume"
+            text: i18nd("plasma_applet_org.kde.plasma.volume", "Increase Microphone Volume")
+            shortcut: Qt.Key_MicVolumeUp
+            onTriggered: increaseDefaultSourceVolume()
+        }
+        PlasmaVolume.GlobalAction {
+            objectName: "decrease_microphone_volume"
+            text: i18nd("plasma_applet_org.kde.plasma.volume", "Decrease Microphone Volume")
+            shortcut: Qt.Key_MicVolumeDown
+            onTriggered: decreaseDefaultSourceVolume()
+        }
+        PlasmaVolume.GlobalAction {
+            objectName: "mic_mute"
+            text: i18nd("plasma_applet_org.kde.plasma.volume", "Mute Microphone")
+            shortcut: Qt.Key_MicMute
+            onTriggered: toggleDefaultSourceMute()
+        }
+    }
 
-	// https://github.com/KDE/plasma-pa/tree/master/src/kcm/package/contents/ui
-	DynamicFilterModel {
-		id: appsModel
-		sourceModel: PlasmaVolume.SinkInputModel {}
-	}
-	DynamicFilterModel {
-		id: appOutputsModel
-		sourceModel: PlasmaVolume.SourceOutputModel {}
-	}
-	DynamicFilterModel {
-		id: filteredSourceModel
-		sourceModel: PlasmaVolume.SourceModel {
-			id: sourceModel
-		}
-	}
-	DynamicFilterModel {
-		id: filteredSinkModel
-		sourceModel: PlasmaVolume.SinkModel {
-			id: sinkModel
-		}
-	}
-	// DynamicFilterModel {
-	// 	id: filteredStreamRestoreModel
-	// 	sourceModel: PlasmaVolume.StreamRestoreModel {
-	// 		id: streamRestoreModel
-	// 	}
-	// }
-	DynamicFilterModel {
-		id: filteredCardModel
-		sourceModel: PlasmaVolume.CardModel {
-			id: cardModel
-		}
-	}
-	function findStream(model, predicate) {
-		for (var i = 0; i < model.count; i++) {
-			var stream = model.get(i)
-			stream = stream.PulseObject
-			// console.log(i, stream, predicate(stream, i))
-			if (predicate(stream, i)) {
-				return i
-			}
-		}
-		return -1
-	}
-	function getStream(model, predicate) {
-		for (var i = 0; i < model.count; i++) {
-			var stream = model.get(i)
-			stream = stream.PulseObject
-			// console.log(i, stream, predicate(stream, i))
-			if (predicate(stream, i)) {
-				return stream
-			}
-		}
-		return null
-	}
+    ExecUtil { id: executable }
 
-	function action_alsamixer() {
-		executable.exec("konsole -e alsamixer")
-	}
+    PlasmaVolume.VolumeOSD {
+        id: osd
+        function showVolume(volume) {
+            if (plasmoid.configuration.showOsd) {
+                var volPercent = PulseObjectCommands.volumePercent(volume)
+                try {
+                    osd.show(volPercent)
+                } catch (e) {
+                    var maxPercent = volPercent > 100 ? 150 : 100
+                    osd.show(volPercent, maxPercent)
+                }
+            }
+        }
 
-	function action_pavucontrol() {
-		executable.exec("pavucontrol")
-	}
+        function showMicVolume(volume) {
+            if (plasmoid.configuration.showOsd) {
+                var volPercent = PulseObjectCommands.volumePercent(volume)
+                osd.showMicrophone(volPercent)
+            }
+        }
+    }
 
-	Component.onCompleted: {
-		if (plasmoid.hasOwnProperty("activationTogglesExpanded")) {
-			plasmoid.activationTogglesExpanded = true
-		}
+    PlasmaVolume.VolumeFeedback { id: feedback }
 
-		plasmoid.setAction("pavucontrol", i18n("PulseAudio Control"), "configure")
-		plasmoid.setAction("alsamixer", i18n("AlsaMixer"), "configure")
+    function playFeedback(sinkIndex) {
+        if (!plasmoid.configuration.volumeChangeFeedback) {
+            return
+        }
+        if (sinkIndex == undefined) {
+            sinkIndex = sinkModel.defaultSink.index
+        }
+        feedback.play(sinkIndex)
+    }
 
-		var widgetName = i18nd("plasma_applet_org.kde.plasma.volume", "Audio Volume")
-		var configureText = i18ndc("libplasma5", "%1 is the name of the applet", "%1 Settings...", widgetName) // plasma-framework
-		plasmoid.setAction("configure", configureText, "configure")
+    // properties that refer to plasmoid/configuration
+    property bool showMediaController: plasmoid.configuration.showMediaController
+    property string mediaControllerLocation: plasmoid.configuration.mediaControllerLocation || 'bottom'
+    property bool mediaControllerVisible: showMediaController && mpris2Source.hasPlayer
 
-		// plasmoid.action("configure").trigger()
-	}
+    // contextual actions (Plasma 6)
+    Plasmoid.contextualActions: [
+        PlasmaCore.Action {
+            id: pavucontrolAction
+            text: i18n("PulseAudio Control")
+            icon.name: "configure"
+            onTriggered: action_pavucontrol()
+        },
+        PlasmaCore.Action {
+            id: alsamixerAction
+            text: i18n("AlsaMixer")
+            icon.name: "configure"
+            onTriggered: action_alsamixer()
+        },
+        PlasmaCore.Action {
+            id: configureAction
+            text: i18n("Settings…")
+            icon.name: "configure"
+            onTriggered: Plasmoid.internalAction("configure").trigger()
+        }
+    ]
+
 }

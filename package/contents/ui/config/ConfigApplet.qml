@@ -1,15 +1,17 @@
-import QtQuick 2.0
-import QtQuick.Controls 1.0
-import QtQuick.Layouts 1.0
-import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as PlasmaComponents
-import org.kde.plasma.extras 2.0 as PlasmaExtras
+import QtQuick 6.5
+import QtQuick.Controls 6.5 as Controls
+import QtQuick.Layouts
+import org.kde.plasma.core as PlasmaCore
+import org.kde.kirigami as Kirigami
 
 import "../lib"
 
 ConfigPage {
 	id: page
 	showAppletVersion: true
+
+    readonly property real dpr: Kirigami.Units.devicePixelRatio
+    PlasmaCore.Theme { id: theme }
 
 	property alias cfg_volumeUpDownSteps: volumeUpDownSteps.value
 	property alias cfg_showVolumeTickmarks: showVolumeTickmarks.checked
@@ -27,22 +29,22 @@ ConfigPage {
 	property alias cfg_showVisualFeedback: showVisualFeedback.checked
 	property alias cfg_showVirtualStreams: showVirtualStreams.checked
 
-	GroupBox {
+	Controls.GroupBox {
 		Layout.fillWidth: true
 		title: i18n("Media Keys")
 
 		ColumnLayout {
 
 			RowLayout {
-				Label {
+				Controls.Label {
 					text: i18n("Volume Up/Down Steps:")
 				}
-				SpinBox {
+				Controls.SpinBox {
 					id: volumeUpDownSteps
-					minimumValue: 1
-					maximumValue: 1000
+					from: 1
+					to: 1000
 				}
-				Label {
+				Controls.Label {
 					text: i18n("One step = %1%", Math.round(1/volumeUpDownSteps.value * 100))
 				}
 			}
@@ -50,13 +52,13 @@ ConfigPage {
 		}
 	}
 
-	GroupBox {
+	Controls.GroupBox {
 		Layout.fillWidth: true
 		title: i18n("Mixer")
 
 		ColumnLayout {
 
-			CheckBox {
+			Controls.CheckBox {
 				enabled: false
 				id: showVolumeTickmarks
 				checked: true
@@ -64,15 +66,15 @@ ConfigPage {
 			}
 
 			RowLayout {
-				Label {
+				Controls.Label {
 					text: i18n("Volume Boost")
 				}
-				SpinBox {
+				Controls.SpinBox {
 					enabled: false
 					id: volumeBoostMaxVolume
-					minimumValue: 100
+					from: 100
 					value: 150
-					maximumValue: 1000
+					to: 1000
 					stepSize: 10
 					suffix: i18nd("plasma_applet_org.kde.plasma.volume", "%")
 				}
@@ -83,31 +85,32 @@ ConfigPage {
 		}
 	}
 
-	ExclusiveGroup { id: volumeSliderThemeGroup }
-	GroupBox {
+	Controls.ButtonGroup { id: volumeSliderThemeButtonGroup }
+
+	Controls.GroupBox {
 		Layout.fillWidth: true
 		title: i18n("Volume Slider Theme")
 
 		ColumnLayout {
-			RadioButton {
+			Controls.RadioButton {
 				text: i18n("Desktop Theme (%1)", theme.themeName)
-				exclusiveGroup: volumeSliderThemeGroup
+				Controls.ButtonGroup.group: volumeSliderThemeButtonGroup
 				enabled: false
 				// checked: plasmoid.configuration.volumeSliderTheme == "desktoptheme"
 				// onClicked: plasmoid.configuration.volumeSliderTheme = "desktoptheme"
 			}
-			RadioButton {
+			Controls.RadioButton {
 				text: i18n("Color Theme (Default Look)")
-				exclusiveGroup: volumeSliderThemeGroup
+				Controls.ButtonGroup.group: volumeSliderThemeButtonGroup
 				// checked: plasmoid.configuration.volumeSliderTheme == "colortheme"
 				// onClicked: plasmoid.configuration.volumeSliderTheme = "colortheme"
 				checked: plasmoid.configuration.volumeSliderTheme == "desktoptheme"
 				onClicked: plasmoid.configuration.volumeSliderTheme = "desktoptheme"
 			}
 			
-			RadioButton {
+			Controls.RadioButton {
 				text: i18n("Light Blue on Grey (Default Look)")
-				exclusiveGroup: volumeSliderThemeGroup
+				Controls.ButtonGroup.group: volumeSliderThemeButtonGroup
 				checked: plasmoid.configuration.volumeSliderTheme == "default"
 				onClicked: plasmoid.configuration.volumeSliderTheme = "default"
 			}
@@ -141,51 +144,51 @@ ConfigPage {
 	// 	}
 	// }
 
-	GroupBox {
+	Controls.GroupBox {
 		Layout.fillWidth: true
 		title: i18n("Options")
 
 		ColumnLayout {
 
-			CheckBox {
+			Controls.CheckBox {
 				id: moveAllAppsOnSetDefault
 				text: i18n("Move all Apps to device when setting default device (when set in with the context menu)")
 			}
 
-			CheckBox {
+			Controls.CheckBox {
 				id: closeOnSetDefault
 				text: i18n("Close the popup after setting a default device")
 			}
 
-			CheckBox {
+			Controls.CheckBox {
 				id: setDefaultOnClickIcon
 				text: i18n("Set default device after clicking a speaker/mic icon")
 			}
 
-			CheckBox {
+			Controls.CheckBox {
 				id: showOsd
 				text: i18n("Show OSD on when changing the volume.")
 			}
 
-			CheckBox {
+			Controls.CheckBox {
 				id: volumeChangeFeedback
 				text: i18n("Volume Feedback: Play popping noise when changing the volume.")
 			}
 
-			CheckBox {
+			Controls.CheckBox {
 				id: showVisualFeedback
 				enabled: false
 				text: i18n("Visual Feedback: Visualize current sound.")
 
 				Component.onCompleted: {
-					var mixerPluginTest = Qt.createQmlObject('import org.kde.plasma.private.volumewin7mixer 1.0; import QtQuick 2.0; QtObject {}', volumeChangeFeedback)
+					var mixerPluginTest = Qt.createQmlObject('import org.kde.plasma.private.volumewin7mixer 1.0; import QtQuick 6.5; QtObject {}', volumeChangeFeedback)
 					if (mixerPluginTest) {
 						enabled = true
 					}
 				}
 			}
 
-			CheckBox {
+			Controls.CheckBox {
 				id: showVirtualStreams
 				text: i18n("Show virtual streams.")
 			}
@@ -193,13 +196,13 @@ ConfigPage {
 		}
 	}
 
-	GroupBox {
+	Controls.GroupBox {
 		Layout.fillWidth: true
 		title: i18n("Media Controller")
 
 		ColumnLayout {
 
-			CheckBox {
+			Controls.CheckBox {
 				id: showMediaController
 				text: i18n("Show Media Controller")
 			}
@@ -214,17 +217,17 @@ ConfigPage {
 				]
 			}
 
-			CheckBox {
+			Controls.CheckBox {
 				id: showMediaTimeElapsed
 				text: i18n("Show Time Elapsed")
 			}
 
-			CheckBox {
+			Controls.CheckBox {
 				id: showMediaTimeLeft
 				text: i18n("Show Time Left")
 			}
 
-			CheckBox {
+			Controls.CheckBox {
 				id: showMediaTotalDuration
 				text: i18n("Show Total Duration")
 			}
@@ -232,7 +235,7 @@ ConfigPage {
 		}
 	}
 
-	GroupBox {
+	Controls.GroupBox {
 		Layout.fillWidth: true
 		title: i18n("Keyboard Shortcuts")
 
@@ -240,12 +243,12 @@ ConfigPage {
 			id: shortcutsTable
 			Layout.fillWidth: true
 
-			Label {
+			Controls.Label {
 				text: i18n("Set the Global Shortcut in the Keyboard Shortcuts tab.")
 				wrapMode: Text.Wrap
 			}
 
-			Label {} // Whitespace
+			Controls.Label {} // Whitespace
 
 			Repeater {
 				property var shortcuts: [
@@ -296,12 +299,12 @@ ConfigPage {
 
 				RowLayout {
 					Layout.fillWidth: true
-					Label {
+					Controls.Label {
 						text: modelData.keySequence
 						
-						Layout.minimumWidth: 100 * units.devicePixelRatio
+						Layout.minimumWidth: 100 * page.dpr
 					}
-					Label {
+					Controls.Label {
 						text: modelData.label
 						font.bold: true
 					}

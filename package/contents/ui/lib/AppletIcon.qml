@@ -1,7 +1,8 @@
 // Version: 3
 
-import QtQuick 2.0
-import org.kde.plasma.core 2.0 as PlasmaCore
+import QtQuick 6.5
+import org.kde.plasma.core as PlasmaCore
+import org.kde.ksvg as KSvg
 
 Item {
 	id: appletIcon
@@ -26,7 +27,7 @@ Item {
 		colorGroup: appletIcon.colorGroup
 	}
 
-	PlasmaCore.SvgItem {
+	KSvg.SvgItem {
 		id: svgItem
 		anchors.centerIn: parent
 		readonly property real maxSize: Math.min(naturalSize.width, naturalSize.height)
@@ -38,7 +39,7 @@ Item {
 		smooth: appletIcon.smooth
 
 		visible: appletIcon.usingPackageSvg
-		svg: PlasmaCore.Svg {
+		svg: KSvg.Svg {
 			id: svg
 			imagePath: appletIcon.filename
 		}

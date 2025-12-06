@@ -1,23 +1,34 @@
 #!/bin/bash
-# Version 7
+# Version 7 - Ported to Plasma 6
 
 rm package/contents/code/peak/__pycache__/*.pyc
 rmdir package/contents/code/peak/__pycache__
 
 if [ -d "package/translate" ]; then
-	echo "[build] translate dir found, running merge."
-	(cd package/translate && sh ./merge && sh ./build)
-	if [ "$(git diff --stat .)" != "" ]; then
-		echo "[build] Changed detected. Cancelling build."
-		git diff --stat .
-		exit
-	fi
+    echo "[build] translate dir found, running merge."
+    (cd package/translate && sh ./merge && sh ./build)
+    if [ "$(git diff --stat .)" != "" ]; then
+        echo "[build] Changed detected. Cancelling build."
+        git diff --stat .
+        exit
+    fi
 fi
 
-plasmoidName=$(kreadconfig5 --file="$PWD/package/metadata.desktop" --group="Desktop Entry" --key="X-KDE-PluginInfo-Name")
+# --- Plasma 6 Changes Start Here ---
+
+# Read the plugin name from the new metadata.json file using kreadconfig6
+# Note: kreadconfig6 reads keys from JSON files directly.
+plasmoidName=$(kreadconfig6 --file="$PWD/package/metadata.json" --group="Desktop Entry" --key="X-KDE-PluginInfo-Name")
 plasmoidName="${plasmoidName##*.}" # Strip namespace (Eg: "org.kde.plasma.")
-plasmoidVersion=$(kreadconfig5 --file="$PWD/package/metadata.desktop" --group="Desktop Entry" --key="X-KDE-PluginInfo-Version")
-filenameTag="-plasma5.12"
+
+# Read the plugin version from metadata.json
+plasmoidVersion=$(kreadconfig6 --file="$PWD/package/metadata.json" --group="Desktop Entry" --key="X-KDE-PluginInfo-Version")
+
+# Update the output filename tag for Plasma 6
+filenameTag="-plasma6.0" 
+
+# --- Plasma 6 Changes End Here ---
+
 rm ${plasmoidName}-v*.plasmoid
 cd package
 filename=${plasmoidName}-v${plasmoidVersion}${filenameTag}.plasmoid

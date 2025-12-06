@@ -1,52 +1,54 @@
-import QtQuick 2.2
-import QtQuick.Window 2.1
-import QtQuick.Controls 1.2
-import QtQuick.Controls.Styles 1.2
-import QtQuick.Layouts 1.0
-import QtQuick.Dialogs 1.0
+import QtQuick 6.5
+import QtQuick.Window
+import QtQuick.Layouts
+import QtQuick.Controls 6.5 as Controls
+import org.kde.kirigami as Kirigami
 
 Window {
 	id: pulseObjectDialog
 
 	property var pulseObject
-	width: 600 * units.devicePixelRatio
-	height: 600 * units.devicePixelRatio
+	width: 600 * Kirigami.Units.devicePixelRatio
+	height: 600 * Kirigami.Units.devicePixelRatio
 	title: pulseObject.name + ' — ' + i18nd("plasma_applet_org.kde.plasma.volume", "Audio Volume")
-
 
 	ColumnLayout {
 		anchors.fill: parent
 
-		// Label {
-		// 	text: pulseObject.name
-		// }
-
-		TableView {
-			id: tableView
+		Controls.ScrollView {
 			Layout.fillWidth: true
 			Layout.fillHeight: true
 
-			model: ListModel {}
+			ListView {
+				id: tableView
+				anchors.fill: parent
+				model: ListModel {}
+				clip: true
 
-			TableViewColumn {
-				id: keyColumn
-				role: "key"
-				width: 200 * units.devicePixelRatio
-			}
-			TableViewColumn {
-				id: valueColumn
-				role: "value"
-				width: 360 * units.devicePixelRatio
-			}
+				delegate: RowLayout {
+					width: ListView.view.width
+					spacing: 8
+					Controls.Label {
+						text: key
+						Layout.preferredWidth: ListView.view.width * 0.35
+						wrapMode: Text.NoWrap
+						elide: Text.ElideRight
+						font.bold: true
+					}
+					Controls.Label {
+						text: value
+						Layout.fillWidth: true
+						elide: Text.ElideRight
+					}
+				}
 
-			style: TableViewStyle {} // Ignore panel theme (which might be black bg)
-			
-			section.property: 'section'
-			section.delegate: Label {
-				text: section
-				font.bold: true
-				font.pixelSize: 16 * units.devicePixelRatio
-				z: -1 // Make sure the section delegate is drawn under the column heading
+				section.property: "section"
+				section.delegate: Controls.Label {
+					width: ListView.view.width
+					text: section
+					padding: Kirigami.Units.smallSpacing
+					font.bold: true
+				}
 			}
 		}
 	}

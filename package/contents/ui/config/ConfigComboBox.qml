@@ -1,9 +1,6 @@
-import QtQuick 2.0
-import QtQuick.Controls 1.0
-import QtQuick.Layouts 1.0
-
-import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as PlasmaComponents
+import QtQuick 6.5
+import QtQuick.Layouts
+import QtQuick.Controls 6.5 as Controls
 
 import ".."
 
@@ -38,14 +35,14 @@ RowLayout {
 	signal populate()
 	Component.onCompleted: populate()
 
-	Label {
+	Controls.Label {
 		id: label
 		text: "Label"
 		Layout.fillWidth: horizontalAlignment == Text.AlignRight
 		horizontalAlignment: Text.AlignLeft
 	}
 
-	ComboBox {
+	Controls.ComboBox {
 		id: comboBox
 		Layout.fillWidth: label.horizontalAlignment == Text.AlignLeft
 

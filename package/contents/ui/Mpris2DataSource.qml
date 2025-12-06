@@ -1,8 +1,8 @@
-import QtQuick 2.0
-import org.kde.plasma.core 2.0 as PlasmaCore
+import QtQuick 6.5
+import org.kde.plasma.plasma5support as Plasma5Support
 
 // https://github.com/KDE/plasma-workspace/tree/master/dataengines/mpris2
-PlasmaCore.DataSource {
+Plasma5Support.DataSource {
 	id: mpris2Source
 
 	readonly property string multiplexSource: "@multiplex"

@@ -1,5 +1,5 @@
-import QtQuick 2.0
-import org.kde.plasma.core 2.1 as PlasmaCore
+import QtQuick 6.5
+import org.kde.plasma.core as PlasmaCore
 
 PlasmaCore.SortFilterModel {
 	id: dynamicFilterModel

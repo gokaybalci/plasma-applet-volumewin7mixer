@@ -1,8 +1,8 @@
-import QtQuick 2.0
-import QtQuick.Layouts 1.0
+import QtQuick 6.5
+import QtQuick.Layouts
 
-import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.plasmoid 2.0
+import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.plasmoid
 
 // Based roughly on:
 // https://github.com/KDE/plasma-desktop/blob/master/desktoppackage/contents/applet/CompactApplet.qml
@@ -53,7 +53,7 @@ Item {
 			opacity: main.dialogVisible ? 1 : 0
 			Behavior on opacity {
 				NumberAnimation {
-					duration: units.shortDuration
+					duration: PlasmaCore.Units.shortDuration
 					easing.type: Easing.InOutQuad
 				}
 			}
@@ -78,7 +78,7 @@ Item {
 			case PlasmaCore.Types.Horizontal:
 				return height;
 			default:
-				return units.gridUnit * 3;
+				return PlasmaCore.Units.gridUnit * 3;
 			}
 		}
 
@@ -89,12 +89,12 @@ Item {
 			case PlasmaCore.Types.Horizontal:
 				return 0;
 			default:
-				return units.gridUnit * 3;
+				return PlasmaCore.Units.gridUnit * 3;
 			}
 		}
 
-		Layout.maximumWidth: inPanel ? units.iconSizeHints.panel : -1
-		Layout.maximumHeight: inPanel ? units.iconSizeHints.panel : -1
+		Layout.maximumWidth: inPanel ? PlasmaCore.Units.iconSizeHints.panel : -1
+		Layout.maximumHeight: inPanel ? PlasmaCore.Units.iconSizeHints.panel : -1
 
 		signal compactItemPressed(var mouse)
 		signal compactItemClicked(var mouse)

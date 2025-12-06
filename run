@@ -4,11 +4,11 @@
 ### Clear SVG cache
 rm ~/.cache/plasma-svgelements-*
 
-killall plasmoidviewer
-QML_DISABLE_DISK_CACHE=true plasmoidviewer -a package -l topedge -f horizontal -x 0 -y 0
+killall plasmawindowed
+QML_DISABLE_DISK_CACHE=true plasmawindowed --applet org.kde.plasma.volumewin7mixer
 
 ### 2x DPI Test
-# QT_DEVICE_PIXEL_RATIO=2 QML_DISABLE_DISK_CACHE=true plasmoidviewer -a package -l topedge -f horizontal -x 0 -y 0
+# QT_DEVICE_PIXEL_RATIO=2 QML_DISABLE_DISK_CACHE=true plasmawindowed --applet org.kde.plasma.volumewin7mixer
 
 ### Test French Locale
-# LANG=fr_FR.UTF-8 QML_DISABLE_DISK_CACHE=true plasmoidviewer -a package -l topedge -f horizontal -x 0 -y 0
+# LANG=fr_FR.UTF-8 QML_DISABLE_DISK_CACHE=true plasmawindowed --applet org.kde.plasma.volumewin7mixer

@@ -1,31 +1,37 @@
-import QtQuick 2.0
-import QtQuick.Controls 1.0
-import QtQuick.Layouts 1.0
-import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 2.0 as PlasmaComponents
-import org.kde.plasma.extras 2.0 as PlasmaExtras
-
-import org.kde.plasma.private.volume 0.1
+import QtQuick 6.5
+import QtQuick.Controls 6.5 as Controls
+import QtQuick.Layouts
+import org.kde.plasma.private.volume as PlasmaVolume
 
 Item {
 	id: page
 
-	SinkModel { id: sinkModel }
-	StreamRestoreModel { id: streamRestoreModel }
+	PlasmaVolume.SinkModel { id: sinkModel }
+	PlasmaVolume.StreamRestoreModel { id: streamRestoreModel }
 
-	TableView {
+	Controls.Frame {
 		anchors.fill: parent
-
-		model: streamRestoreModel
-
-		TableViewColumn {
-			role: "Name"
-			title: "Name"
-		}
-
-		TableViewColumn {
-			role: "Device"
-			title: "Device"
+		Controls.ScrollView {
+			anchors.fill: parent
+			ListView {
+				id: restoreList
+				anchors.fill: parent
+				model: streamRestoreModel
+				delegate: RowLayout {
+					width: ListView.view.width
+					spacing: 8
+					Controls.Label {
+						text: model.Name || ""
+						Layout.preferredWidth: restoreList.width * 0.4
+						elide: Text.ElideRight
+					}
+					Controls.Label {
+						text: model.Device || ""
+						Layout.fillWidth: true
+						elide: Text.ElideRight
+					}
+				}
+			}
 		}
 	}
 }
